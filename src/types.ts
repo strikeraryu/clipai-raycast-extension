@@ -3,7 +3,7 @@ export interface Preferences {
   model: string;
   temperature: string;
   maxTokens: string;
-  hotkeys: string;
+  historyLimit: string;
 }
 
 // Enhanced types for image support
@@ -48,4 +48,12 @@ export interface HotKey {
   subtitle: string;
   prompt: string;
   icon: string;
+}
+
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  hotkey: HotKey;
+  clipboardData: EnhancedClipboardData;
+  result: string;
 }

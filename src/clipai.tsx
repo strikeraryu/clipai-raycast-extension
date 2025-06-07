@@ -1,10 +1,13 @@
 import {
   ActionPanel, Action, List, showToast, Toast, Clipboard, getPreferenceValues,
-  openExtensionPreferences, Detail, useNavigation, Form, Icon, Color
+  openExtensionPreferences, Detail, useNavigation, Form, Icon, Color,
+  LocalStorage
 } from "@raycast/api";
 import { useState, useEffect, useCallback } from "react";
-import { Preferences, ChatMessage, HotKey, EnhancedClipboardData } from "./types";
+import { Preferences, ChatMessage, HotKey, EnhancedClipboardData, HistoryItem } from "./types";
 import { HotkeysSettingsView } from "./components/settings";
+import { HistoryView } from "./components/history";
+import { ResultView } from "./components/ResultView";
 import { DEFAULT_CONFIG } from "./constants";
 import { DEFAULT_HOTKEYS } from "./hotkeys";
 import fs from "fs";
@@ -132,8 +135,12 @@ async function loadClipboardData(): Promise<EnhancedClipboardData> {
 }
 
 // Create chat message content from clipboard data
-function createMessageContent(prompt: string, clipboardData: EnhancedClipboardData): ChatMessage["content"] {
-  const content: any[] = [];
+export function createMessageContent(prompt: string, clipboardData: EnhancedClipboardData): ChatMessage["content"] {
+  type ContentItem = 
+    | { type: "text"; text: string }
+    | { type: "image_url"; image_url: { url: string; detail: "high" | "low" } };
+
+  const content: ContentItem[] = [];
 
   // Add the prompt text
   if (prompt.trim()) {
@@ -146,7 +153,7 @@ function createMessageContent(prompt: string, clipboardData: EnhancedClipboardDa
   // Add clipboard text if present
   if (clipboardData.text) {
     const textToAdd = prompt.trim() ? `\n\n${clipboardData.text}` : clipboardData.text;
-    if (content.length > 0) {
+    if (content.length > 0 && content[0].type === "text") {
       content[0].text += textToAdd;
     } else {
       content.push({
@@ -236,30 +243,22 @@ function ChatInputForm({ onSubmit }: {
   );
 }
 
-function ChatView({ initialMessages }: { initialMessages: ChatMessage[] }) {
+// Add ImageData type definition
+interface ImageData {
+  base64: string;
+  mimeType: string;
+}
+
+export function ChatView({ initialMessages }: { initialMessages: ChatMessage[] }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
-  const [clipboardData, setClipboardData] = useState<EnhancedClipboardData>({ type: "empty" });
   const { pop, push } = useNavigation();
   const preferences = getPreferenceValues<Preferences>();
 
-  // Load clipboard data when component mounts
-  useEffect(() => {
-    loadClipboardData().then(setClipboardData);
-  }, []);
+  // Format messages for display
+  const displayMessages = [...messages].reverse();
 
-  const lastAssistantMessage = messages
-    .slice()
-    .reverse()
-    .find((msg) => msg.role === "assistant")?.content;
-
-  const lastAssistantText = typeof lastAssistantMessage === 'string'
-    ? lastAssistantMessage
-    : Array.isArray(lastAssistantMessage)
-      ? lastAssistantMessage.find(c => c.type === "text")?.text || ""
-      : "";
-
-  const conversationMarkdown = messages
+  const conversationMarkdown = displayMessages
     .map((msg) => {
       const role = msg.role === "user" ? "🧑‍💻 You" : "🤖 Assistant";
       let content = "";
@@ -275,21 +274,33 @@ function ChatView({ initialMessages }: { initialMessages: ChatMessage[] }) {
         content = imageCount > 0 ? `[${imageCount} Image${imageCount > 1 ? 's' : ''}] ${textParts}` : textParts;
       }
 
-      return `## ${role}
-
-${content}`;
+      return `## ${role}\n\n${content}`;
     })
     .join("\n\n---\n\n");
 
+  const lastAssistantMessage = messages
+    .slice()
+    .reverse()
+    .find((msg) => msg.role === "assistant")?.content;
+
+  const lastAssistantText = typeof lastAssistantMessage === 'string'
+    ? lastAssistantMessage
+    : Array.isArray(lastAssistantMessage)
+      ? lastAssistantMessage.find(c => c.type === "text")?.text || ""
+      : "";
+
   const sendNewMessage = useCallback(() => {
     const handleSubmit = async (input: string) => {
-      const userContent = createMessageContent(input, clipboardData);
-      const userMessage: ChatMessage = { role: "user", content: userContent };
+      // Create the new user message
+      const userMessage: ChatMessage = { role: "user", content: input };
+      
+      // Update messages with the new user message
       const newMessages = [...messages, userMessage];
       setMessages(newMessages);
       setIsLoading(true);
 
       try {
+        // Call OpenAI with the full conversation history
         const response = await callOpenAI(newMessages, preferences);
         const assistantMessage: ChatMessage = { role: "assistant", content: response };
         setMessages([...newMessages, assistantMessage]);
@@ -310,12 +321,13 @@ ${content}`;
     };
 
     push(<ChatInputForm onSubmit={handleSubmit} />);
-  }, [messages, preferences, push, clipboardData]);
+  }, [messages, preferences, push]);
 
   return (
     <Detail
       markdown={conversationMarkdown}
       isLoading={isLoading}
+      navigationTitle="Chat"
       actions={
         <ActionPanel>
           <ActionPanel.Section title="Chat Actions">
@@ -332,19 +344,21 @@ ${content}`;
             )}
             <Action.CopyToClipboard
               title="Copy Full Conversation"
-              content={messages.map((msg) => {
-                if (typeof msg.content === 'string') {
-                  return `${msg.role}: ${msg.content}`;
-                } else if (Array.isArray(msg.content)) {
-                  const textParts = msg.content
-                    .filter(c => c.type === "text")
-                    .map(c => c.text)
-                    .join(" ");
-                  const imageCount = msg.content.filter(c => c.type === "image_url").length;
-                  return `${msg.role}: ${imageCount > 0 ? `[${imageCount} Image${imageCount > 1 ? 's' : ''}] ` : ''}${textParts}`;
-                }
-                return `${msg.role}: [Unknown content]`;
-              }).join("\n\n")}
+              content={displayMessages
+                .map((msg) => {
+                  if (typeof msg.content === 'string') {
+                    return `${msg.role}: ${msg.content}`;
+                  } else if (Array.isArray(msg.content)) {
+                    const textParts = msg.content
+                      .filter(c => c.type === "text")
+                      .map(c => c.text)
+                      .join(" ");
+                    const imageCount = msg.content.filter(c => c.type === "image_url").length;
+                    return `${msg.role}: ${imageCount > 0 ? `[${imageCount} Image${imageCount > 1 ? 's' : ''}] ` : ''}${textParts}`;
+                  }
+                  return `${msg.role}: [Unknown content]`;
+                })
+                .join("\n\n")}
             />
           </ActionPanel.Section>
           <ActionPanel.Section title="Navigation">
@@ -373,105 +387,52 @@ ${content}`;
   );
 }
 
-function ResultView({ result, clipboardData, hotkey }: { 
-  result: string; 
-  clipboardData: EnhancedClipboardData; 
-  hotkey: HotKey 
-}) {
-  const { push, pop } = useNavigation();
-  const preferences = getPreferenceValues<Preferences>();
-
-  const expandToChat = useCallback(async () => {
-    const userContent = createMessageContent(hotkey.prompt, clipboardData);
-    const initialMessages: ChatMessage[] = [
-      { role: "user", content: userContent },
-      { role: "assistant", content: result },
-    ];
-    push(<ChatView initialMessages={initialMessages} />);
-  }, [result, clipboardData, hotkey, push]);
-
-  const regenerateResponse = useCallback(async () => {
-    try {
-      showToast({
-        style: Toast.Style.Animated,
-        title: "Regenerating response...",
-      });
-
-      const userContent = createMessageContent(hotkey.prompt, clipboardData);
-      const messages: ChatMessage[] = [
-        { role: "user", content: userContent },
-      ];
-
-      const newResult = await callOpenAI(messages, preferences);
-      push(<ResultView result={newResult} clipboardData={clipboardData} hotkey={hotkey} />);
-
-      showToast({
-        style: Toast.Style.Success,
-        title: "Response regenerated",
-      });
-    } catch (error) {
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Error",
-        message: error instanceof Error ? error.message : "Failed to regenerate response",
-      });
+// Function to load hotkeys from storage
+async function loadSavedHotkeys(): Promise<HotKey[]> {
+  try {
+    // Try loading from LocalStorage
+    const savedHotkeys = await LocalStorage.getItem('clipyai_hotkeys');
+    if (savedHotkeys && typeof savedHotkeys === 'string') {
+      return JSON.parse(savedHotkeys);
     }
-  }, [clipboardData, hotkey, preferences, push]);
+    
+    return DEFAULT_HOTKEYS;
+  } catch (error) {
+    console.error('Error loading hotkeys:', error);
+    return DEFAULT_HOTKEYS;
+  }
+}
 
-  return (
-    <Detail
-      markdown={`# ${hotkey.title}
-
-${result}`}
-      actions={
-        <ActionPanel>
-          <ActionPanel.Section title="Result Actions">
-            <Action.CopyToClipboard
-              title="Copy Result"
-              content={result}
-            />
-            <Action
-              title="Expand to Chat"
-              icon={Icon.Message}
-              onAction={expandToChat}
-            />
-            <Action
-              title="Regenerate"
-              icon={Icon.ArrowClockwise}
-              onAction={regenerateResponse}
-            />
-          </ActionPanel.Section>
-          <ActionPanel.Section title="Navigation">
-            <Action
-              title="Back to Menu"
-              icon={Icon.ArrowLeft}
-              onAction={pop}
-            />
-          </ActionPanel.Section>
-        </ActionPanel>
-      }
-      metadata={
-        <Detail.Metadata>
-          <Detail.Metadata.Label title="Action" text={hotkey.title} />
-          <Detail.Metadata.Label title="Characters" text={result.length.toString()} />
-          <Detail.Metadata.Label title="Words" text={result.split(' ').length.toString()} />
-          {clipboardData.images && clipboardData.images.length > 0 && (
-            <Detail.Metadata.Label 
-              title="Images" 
-              text={clipboardData.images.length.toString()} 
-            />
-          )}
-        </Detail.Metadata>
-      }
-    />
-  );
+// Function to add item to history
+async function addToHistory(item: HistoryItem, preferences: Preferences) {
+  try {
+    const history = await LocalStorage.getItem('clipyai_history');
+    let historyItems: HistoryItem[] = [];
+    
+    if (history && typeof history === 'string') {
+      historyItems = JSON.parse(history);
+    }
+    
+    // Add new item at the beginning
+    historyItems.unshift(item);
+    
+    // Limit history size
+    const limit = parseInt(preferences.historyLimit) || 20;
+    if (historyItems.length > limit) {
+      historyItems = historyItems.slice(0, limit);
+    }
+    
+    await LocalStorage.setItem('clipyai_history', JSON.stringify(historyItems));
+  } catch (error) {
+    console.error('Error saving to history:', error);
+  }
 }
 
 function MainMenu() {
   const [clipboardData, setClipboardData] = useState<EnhancedClipboardData>({ type: "empty" });
   const [hotkeys, setHotkeys] = useState<HotKey[]>(DEFAULT_HOTKEYS);
   const [isLoading, setIsLoading] = useState(false);
-  const { push } = useNavigation();
+  const { push, pop } = useNavigation();
   const preferences = getPreferenceValues<Preferences>();
 
   const loadClipboard = useCallback(async () => {
@@ -479,24 +440,50 @@ function MainMenu() {
     setClipboardData(data);
   }, []);
 
-  const loadHotkeys = useCallback(() => {
-    try {
-      if (preferences.hotkeys?.trim()) {
-        const savedHotkeys = JSON.parse(preferences.hotkeys);
-        setHotkeys(savedHotkeys);
-      } else {
-        setHotkeys(DEFAULT_HOTKEYS);
-      }
-    } catch (error) {
-      console.error("Error loading hotkeys:", error);
-      setHotkeys(DEFAULT_HOTKEYS);
-    }
-  }, [preferences.hotkeys]);
+  const loadHotkeys = useCallback(async () => {
+    const savedHotkeys = await loadSavedHotkeys();
+    setHotkeys(savedHotkeys);
+  }, []);
 
+  // Load initial data
   useEffect(() => {
     loadClipboard();
     loadHotkeys();
   }, [loadClipboard, loadHotkeys]);
+
+  // Watch for changes in LocalStorage
+  useEffect(() => {
+    const checkHotkeys = async () => {
+      const savedHotkeys = await loadSavedHotkeys();
+      const savedHotkeysStr = JSON.stringify(savedHotkeys);
+      const currentHotkeysStr = JSON.stringify(hotkeys);
+      
+      if (savedHotkeysStr !== currentHotkeysStr) {
+        setHotkeys(savedHotkeys);
+      }
+    };
+
+    const interval = setInterval(checkHotkeys, 1000);
+    return () => clearInterval(interval);
+  }, [hotkeys]);
+
+  const openHotkeySettings = useCallback(() => {
+    const handleSettingsChange = async () => {
+      await loadHotkeys();
+    };
+
+    const handleClose = () => {
+      loadHotkeys();
+      pop();
+    };
+
+    push(
+      <HotkeysSettingsView
+        onSettingsChange={handleSettingsChange}
+        onClose={handleClose}
+      />
+    );
+  }, [push, pop, loadHotkeys]);
 
   const executeHotkey = useCallback(async (hotkey: HotKey) => {
     if (!preferences.apiKey?.trim()) {
@@ -531,6 +518,17 @@ function MainMenu() {
       ];
 
       const result = await callOpenAI(messages, preferences);
+      
+      // Add to history
+      const historyItem: HistoryItem = {
+        id: `history-${Date.now()}`,
+        timestamp: Date.now(),
+        hotkey,
+        clipboardData,
+        result,
+      };
+      await addToHistory(historyItem, preferences);
+      
       push(<ResultView result={result} clipboardData={clipboardData} hotkey={hotkey} />);
 
       showToast({
@@ -575,9 +573,14 @@ function MainMenu() {
     });
 
     try {
+      // Create initial message with clipboard content
       const userContent = createMessageContent("", clipboardData);
-      const userMessage: ChatMessage = { role: "user", content: userContent };
-      push(<ChatView initialMessages={[userMessage]} />);
+      const initialMessages: ChatMessage[] = [
+        { role: "user", content: userContent }
+      ];
+      
+      // Start chat with system message and clipboard content
+      push(<ChatView initialMessages={initialMessages} />);
 
       showToast({
         style: Toast.Style.Success,
@@ -637,9 +640,14 @@ function MainMenu() {
   const settingActionPanel = (
     <ActionPanel.Section title="Settings">
       <Action
+        title="View History"
+        icon={Icon.Clock}
+        onAction={() => push(<HistoryView />)}
+      />
+      <Action
         title="Manage Hotkeys"
         icon={Icon.Gear}
-        onAction={() => push(<HotkeysSettingsView />)}
+        onAction={openHotkeySettings}
       />
       <Action
         title="Open Extension Preferences"

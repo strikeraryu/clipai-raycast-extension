@@ -67,12 +67,13 @@
       "placeholder": "1000"
     },
     {
-      "name": "hotkeys",
+      "name": "historyLimit",
       "type": "textfield",
       "required": false,
-      "title": "Hotkeys JSON",
-      "description": "JSON configuration for hotkeys (managed by extension)",
-      "default": ""
+      "title": "History Limit",
+      "description": "Maximum number of actions to keep in history",
+      "default": "20",
+      "placeholder": "20"
     }
   ],
   "dependencies": {

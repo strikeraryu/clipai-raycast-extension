@@ -1,11 +1,44 @@
 import { 
-  Action, ActionPanel, getPreferenceValues, useNavigation, Icon, 
-  List, showToast, Toast, confirmAlert, Alert, Form 
+  Action, ActionPanel, useNavigation, Icon, 
+  List, showToast, Toast, confirmAlert, Alert, Form,
+  LocalStorage
 } from "@raycast/api";
 import { useCallback, useEffect, useState } from "react";
-import { HotKey, Preferences } from "../types";
+import { HotKey } from "../types";
 import { ICONS } from "../constants";
 import { DEFAULT_HOTKEYS } from "../hotkeys";
+
+// Function to save preferences
+async function savePreferences(hotkeys: HotKey[]) {
+  try {
+    // Convert hotkeys to string
+    const hotkeyString = JSON.stringify(hotkeys);
+    
+    // Save to LocalStorage
+    await LocalStorage.setItem('clipyai_hotkeys', hotkeyString);
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+    return false;
+  }
+}
+
+// Function to load preferences
+async function loadSavedHotkeys(): Promise<HotKey[]> {
+  try {
+    // Try loading from LocalStorage
+    const savedHotkeys = await LocalStorage.getItem('clipyai_hotkeys');
+    if (savedHotkeys && typeof savedHotkeys === 'string') {
+      return JSON.parse(savedHotkeys);
+    }
+    
+    return DEFAULT_HOTKEYS;
+  } catch (error) {
+    console.error('Error loading hotkeys:', error);
+    return DEFAULT_HOTKEYS;
+  }
+}
 
 function HotkeyForm({ hotkey, onSave }: { hotkey?: HotKey; onSave: (hotkey: HotKey) => void }) {
   const [title, setTitle] = useState(hotkey?.title || "");
@@ -84,7 +117,7 @@ function HotkeyForm({ hotkey, onSave }: { hotkey?: HotKey; onSave: (hotkey: HotK
       >
         {iconOptions.map((option) => (
           <Form.Dropdown.Item
-            key={option.title}
+            key={option.value}
             value={option.value}
             title={option.title}
             icon={option.value}
@@ -95,24 +128,20 @@ function HotkeyForm({ hotkey, onSave }: { hotkey?: HotKey; onSave: (hotkey: HotK
   );
 }
 
-export function HotkeysSettingsView() {
+export function HotkeysSettingsView({ 
+  onSettingsChange,
+  onClose 
+}: { 
+  onSettingsChange?: () => void;
+  onClose?: () => void;
+}) {
   const [hotkeys, setHotkeys] = useState<HotKey[]>([]);
-  const { push, pop } = useNavigation();
-  const preferences = getPreferenceValues<Preferences>();
+  const { push } = useNavigation();
 
-  const loadHotkeys = useCallback(() => {
-    try {
-      if (preferences.hotkeys?.trim()) {
-        const savedHotkeys = JSON.parse(preferences.hotkeys);
-        setHotkeys(savedHotkeys);
-      } else {
-        setHotkeys(DEFAULT_HOTKEYS);
-      }
-    } catch (error) {
-      console.error("Error loading hotkeys:", error);
-      setHotkeys(DEFAULT_HOTKEYS);
-    }
-  }, [preferences.hotkeys]);
+  const loadHotkeys = useCallback(async () => {
+    const savedHotkeys = await loadSavedHotkeys();
+    setHotkeys(savedHotkeys);
+  }, []);
 
   useEffect(() => {
     loadHotkeys();
@@ -120,21 +149,37 @@ export function HotkeysSettingsView() {
 
   const saveHotkeys = useCallback(async (newHotkeys: HotKey[]) => {
     try {
+      // Save to state
       setHotkeys(newHotkeys);
 
-      showToast({
-        style: Toast.Style.Success,
-        title: "Hotkeys Updated",
-        message: "Your hotkeys have been saved",
-      });
-    } catch {
+      // Save to preferences
+      const success = await savePreferences(newHotkeys);
+
+      if (success) {
+        // Notify parent of changes
+        onSettingsChange?.();
+
+        showToast({
+          style: Toast.Style.Success,
+          title: "Hotkeys Updated",
+          message: "Your hotkeys have been saved",
+        });
+      } else {
+        throw new Error("Failed to save preferences");
+      }
+    } catch (error) {
+      console.error("Failed to save hotkeys:", error);
       showToast({
         style: Toast.Style.Failure,
         title: "Error",
         message: "Failed to save hotkeys",
       });
     }
-  }, []);
+  }, [onSettingsChange]);
+
+  const handleClose = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
 
   const addHotkey = useCallback(() => {
     const handleSave = (newHotkey: HotKey) => {
@@ -168,7 +213,7 @@ export function HotkeysSettingsView() {
 
     if (confirmed) {
       const updatedHotkeys = hotkeys.filter(h => h.id !== hotkey.id);
-      saveHotkeys(updatedHotkeys);
+      await saveHotkeys(updatedHotkeys);
     }
   }, [hotkeys, saveHotkeys]);
 
@@ -183,7 +228,7 @@ export function HotkeysSettingsView() {
     });
 
     if (confirmed) {
-      saveHotkeys(DEFAULT_HOTKEYS);
+      await saveHotkeys(DEFAULT_HOTKEYS);
     }
   }, [saveHotkeys]);
 
@@ -201,11 +246,12 @@ export function HotkeysSettingsView() {
             title="Reset to Defaults"
             icon={Icon.ArrowClockwise}
             onAction={resetToDefaults}
+            shortcut={{ modifiers: ["cmd"], key: "r" }}
           />
           <Action
             title="Back to Menu"
             icon={Icon.ArrowLeft}
-            onAction={pop}
+            onAction={handleClose}
           />
         </ActionPanel>
       }
@@ -234,6 +280,12 @@ export function HotkeysSettingsView() {
                   title="Add New Hotkey"
                   icon={Icon.Plus}
                   onAction={addHotkey}
+                />
+                <Action
+                  title="Reset to Defaults"
+                  icon={Icon.ArrowClockwise}
+                  onAction={resetToDefaults}
+                  shortcut={{ modifiers: ["cmd"], key: "r" }}
                 />
               </ActionPanel>
             }
