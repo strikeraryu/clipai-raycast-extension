@@ -17,13 +17,13 @@ import { ResultView } from "./ResultView";
 // Load history from storage
 async function loadHistory(): Promise<HistoryItem[]> {
   try {
-    const history = await LocalStorage.getItem('clipyai_history');
-    if (history && typeof history === 'string') {
+    const history = await LocalStorage.getItem("clipyai_history");
+    if (history && typeof history === "string") {
       return JSON.parse(history);
     }
     return [];
   } catch (error) {
-    console.error('Error loading history:', error);
+    console.error("Error loading history:", error);
     return [];
   }
 }
@@ -31,9 +31,9 @@ async function loadHistory(): Promise<HistoryItem[]> {
 // Save history to storage
 async function saveHistory(history: HistoryItem[]): Promise<void> {
   try {
-    await LocalStorage.setItem('clipyai_history', JSON.stringify(history));
+    await LocalStorage.setItem("clipyai_history", JSON.stringify(history));
   } catch (error) {
-    console.error('Error saving history:', error);
+    console.error("Error saving history:", error);
   }
 }
 
@@ -47,16 +47,12 @@ export function HistoryView() {
     try {
       const data = await loadHistory();
       // Filter out any invalid items
-      const validData = data.filter(item => 
-        item && 
-        item.hotkey && 
-        item.hotkey.title && 
-        item.result && 
-        item.clipboardData
+      const validData = data.filter(
+        (item) => item && item.hotkey && item.hotkey.title && item.result && item.clipboardData,
       );
       setHistory(validData.sort((a, b) => b.timestamp - a.timestamp));
     } catch (error) {
-      console.error('Error loading history:', error);
+      console.error("Error loading history:", error);
       setHistory([]);
     }
     setIsLoading(false);
@@ -86,15 +82,12 @@ export function HistoryView() {
     }
   }, []);
 
-  const openResult = useCallback((item: HistoryItem) => {
-    push(
-      <ResultView
-        result={item.result}
-        clipboardData={item.clipboardData}
-        hotkey={item.hotkey}
-      />
-    );
-  }, [push]);
+  const openResult = useCallback(
+    (item: HistoryItem) => {
+      push(<ResultView result={item.result} clipboardData={item.clipboardData} hotkey={item.hotkey} />);
+    },
+    [push],
+  );
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -107,17 +100,8 @@ export function HistoryView() {
       searchBarPlaceholder="Search history..."
       actions={
         <ActionPanel>
-          <Action
-            title="Clear History"
-            icon={Icon.Trash}
-            style={Action.Style.Destructive}
-            onAction={clearHistory}
-          />
-          <Action
-            title="Back"
-            icon={Icon.ArrowLeft}
-            onAction={pop}
-          />
+          <Action title="Clear History" icon={Icon.Trash} style={Action.Style.Destructive} onAction={clearHistory} />
+          <Action title="Back" icon={Icon.ArrowLeft} onAction={pop} />
         </ActionPanel>
       }
     >
@@ -126,21 +110,12 @@ export function HistoryView() {
           key={item.id}
           title={item.hotkey.title}
           subtitle={formatDate(item.timestamp)}
-          accessories={[
-            { text: `${item.result.length} chars` }
-          ]}
+          accessories={[{ text: `${item.result.length} chars` }]}
           icon={item.hotkey.icon}
           actions={
             <ActionPanel>
-              <Action
-                title="Open Result"
-                icon={Icon.Eye}
-                onAction={() => openResult(item)}
-              />
-              <Action.CopyToClipboard
-                title="Copy Result"
-                content={item.result}
-              />
+              <Action title="Open Result" icon={Icon.Eye} onAction={() => openResult(item)} />
+              <Action.CopyToClipboard title="Copy Result" content={item.result} />
               <Action
                 title="Clear History"
                 icon={Icon.Trash}
@@ -153,4 +128,4 @@ export function HistoryView() {
       ))}
     </List>
   );
-} 
+}

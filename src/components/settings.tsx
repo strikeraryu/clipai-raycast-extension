@@ -1,7 +1,15 @@
-import { 
-  Action, ActionPanel, useNavigation, Icon, 
-  List, showToast, Toast, confirmAlert, Alert, Form,
-  LocalStorage
+import {
+  Action,
+  ActionPanel,
+  useNavigation,
+  Icon,
+  List,
+  showToast,
+  Toast,
+  confirmAlert,
+  Alert,
+  Form,
+  LocalStorage,
 } from "@raycast/api";
 import { useCallback, useEffect, useState } from "react";
 import { HotKey } from "../types";
@@ -13,13 +21,13 @@ async function savePreferences(hotkeys: HotKey[]) {
   try {
     // Convert hotkeys to string
     const hotkeyString = JSON.stringify(hotkeys);
-    
+
     // Save to LocalStorage
-    await LocalStorage.setItem('clipyai_hotkeys', hotkeyString);
-    
+    await LocalStorage.setItem("clipyai_hotkeys", hotkeyString);
+
     return true;
   } catch (error) {
-    console.error('Error saving preferences:', error);
+    console.error("Error saving preferences:", error);
     return false;
   }
 }
@@ -28,14 +36,14 @@ async function savePreferences(hotkeys: HotKey[]) {
 async function loadSavedHotkeys(): Promise<HotKey[]> {
   try {
     // Try loading from LocalStorage
-    const savedHotkeys = await LocalStorage.getItem('clipyai_hotkeys');
-    if (savedHotkeys && typeof savedHotkeys === 'string') {
+    const savedHotkeys = await LocalStorage.getItem("clipyai_hotkeys");
+    if (savedHotkeys && typeof savedHotkeys === "string") {
       return JSON.parse(savedHotkeys);
     }
-    
+
     return DEFAULT_HOTKEYS;
   } catch (error) {
-    console.error('Error loading hotkeys:', error);
+    console.error("Error loading hotkeys:", error);
     return DEFAULT_HOTKEYS;
   }
 }
@@ -80,21 +88,11 @@ function HotkeyForm({ hotkey, onSave }: { hotkey?: HotKey; onSave: (hotkey: HotK
             icon={Icon.SaveDocument}
             onSubmit={handleSubmit}
           />
-          <Action
-            title="Cancel"
-            icon={Icon.XMarkCircle}
-            onAction={pop}
-          />
+          <Action title="Cancel" icon={Icon.XMarkCircle} onAction={pop} />
         </ActionPanel>
       }
     >
-      <Form.TextField
-        id="title"
-        title="Title"
-        placeholder="Enter hotkey title"
-        value={title}
-        onChange={setTitle}
-      />
+      <Form.TextField id="title" title="Title" placeholder="Enter hotkey title" value={title} onChange={setTitle} />
       <Form.TextField
         id="subtitle"
         title="Subtitle"
@@ -102,36 +100,20 @@ function HotkeyForm({ hotkey, onSave }: { hotkey?: HotKey; onSave: (hotkey: HotK
         value={subtitle}
         onChange={setSubtitle}
       />
-      <Form.TextArea
-        id="prompt"
-        title="Prompt"
-        placeholder="Enter the AI prompt"
-        value={prompt}
-        onChange={setPrompt}
-      />
-      <Form.Dropdown
-        id="icon"
-        title="Icon"
-        value={selectedIcon}
-        onChange={(value) => setSelectedIcon(value as Icon)}
-      >
+      <Form.TextArea id="prompt" title="Prompt" placeholder="Enter the AI prompt" value={prompt} onChange={setPrompt} />
+      <Form.Dropdown id="icon" title="Icon" value={selectedIcon} onChange={(value) => setSelectedIcon(value as Icon)}>
         {iconOptions.map((option) => (
-          <Form.Dropdown.Item
-            key={option.value}
-            value={option.value}
-            title={option.title}
-            icon={option.value}
-          />
+          <Form.Dropdown.Item key={option.value} value={option.value} title={option.title} icon={option.value} />
         ))}
       </Form.Dropdown>
     </Form>
   );
 }
 
-export function HotkeysSettingsView({ 
+export function HotkeysSettingsView({
   onSettingsChange,
-  onClose 
-}: { 
+  onClose,
+}: {
   onSettingsChange?: () => void;
   onClose?: () => void;
 }) {
@@ -147,35 +129,38 @@ export function HotkeysSettingsView({
     loadHotkeys();
   }, [loadHotkeys]);
 
-  const saveHotkeys = useCallback(async (newHotkeys: HotKey[]) => {
-    try {
-      // Save to state
-      setHotkeys(newHotkeys);
+  const saveHotkeys = useCallback(
+    async (newHotkeys: HotKey[]) => {
+      try {
+        // Save to state
+        setHotkeys(newHotkeys);
 
-      // Save to preferences
-      const success = await savePreferences(newHotkeys);
+        // Save to preferences
+        const success = await savePreferences(newHotkeys);
 
-      if (success) {
-        // Notify parent of changes
-        onSettingsChange?.();
+        if (success) {
+          // Notify parent of changes
+          onSettingsChange?.();
 
+          showToast({
+            style: Toast.Style.Success,
+            title: "Hotkeys Updated",
+            message: "Your hotkeys have been saved",
+          });
+        } else {
+          throw new Error("Failed to save preferences");
+        }
+      } catch (error) {
+        console.error("Failed to save hotkeys:", error);
         showToast({
-          style: Toast.Style.Success,
-          title: "Hotkeys Updated",
-          message: "Your hotkeys have been saved",
+          style: Toast.Style.Failure,
+          title: "Error",
+          message: "Failed to save hotkeys",
         });
-      } else {
-        throw new Error("Failed to save preferences");
       }
-    } catch (error) {
-      console.error("Failed to save hotkeys:", error);
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Error",
-        message: "Failed to save hotkeys",
-      });
-    }
-  }, [onSettingsChange]);
+    },
+    [onSettingsChange],
+  );
 
   const handleClose = useCallback(() => {
     onClose?.();
@@ -190,32 +175,36 @@ export function HotkeysSettingsView({
     push(<HotkeyForm onSave={handleSave} />);
   }, [hotkeys, push, saveHotkeys]);
 
-  const editHotkey = useCallback((hotkey: HotKey) => {
-    const handleSave = (updatedHotkey: HotKey) => {
-      const updatedHotkeys = hotkeys.map(h =>
-        h.id === hotkey.id ? updatedHotkey : h
-      );
-      saveHotkeys(updatedHotkeys);
-    };
+  const editHotkey = useCallback(
+    (hotkey: HotKey) => {
+      const handleSave = (updatedHotkey: HotKey) => {
+        const updatedHotkeys = hotkeys.map((h) => (h.id === hotkey.id ? updatedHotkey : h));
+        saveHotkeys(updatedHotkeys);
+      };
 
-    push(<HotkeyForm hotkey={hotkey} onSave={handleSave} />);
-  }, [hotkeys, push, saveHotkeys]);
+      push(<HotkeyForm hotkey={hotkey} onSave={handleSave} />);
+    },
+    [hotkeys, push, saveHotkeys],
+  );
 
-  const deleteHotkey = useCallback(async (hotkey: HotKey) => {
-    const confirmed = await confirmAlert({
-      title: "Delete Hotkey",
-      message: `Are you sure you want to delete "${hotkey.title}"?`,
-      primaryAction: {
-        title: "Delete",
-        style: Alert.ActionStyle.Destructive,
-      },
-    });
+  const deleteHotkey = useCallback(
+    async (hotkey: HotKey) => {
+      const confirmed = await confirmAlert({
+        title: "Delete Hotkey",
+        message: `Are you sure you want to delete "${hotkey.title}"?`,
+        primaryAction: {
+          title: "Delete",
+          style: Alert.ActionStyle.Destructive,
+        },
+      });
 
-    if (confirmed) {
-      const updatedHotkeys = hotkeys.filter(h => h.id !== hotkey.id);
-      await saveHotkeys(updatedHotkeys);
-    }
-  }, [hotkeys, saveHotkeys]);
+      if (confirmed) {
+        const updatedHotkeys = hotkeys.filter((h) => h.id !== hotkey.id);
+        await saveHotkeys(updatedHotkeys);
+      }
+    },
+    [hotkeys, saveHotkeys],
+  );
 
   const resetToDefaults = useCallback(async () => {
     const confirmed = await confirmAlert({
@@ -237,22 +226,14 @@ export function HotkeysSettingsView({
       navigationTitle="Manage Hotkeys"
       actions={
         <ActionPanel>
-          <Action
-            title="Add New Hotkey"
-            icon={Icon.Plus}
-            onAction={addHotkey}
-          />
+          <Action title="Add New Hotkey" icon={Icon.Plus} onAction={addHotkey} />
           <Action
             title="Reset to Defaults"
             icon={Icon.ArrowClockwise}
             onAction={resetToDefaults}
             shortcut={{ modifiers: ["cmd"], key: "r" }}
           />
-          <Action
-            title="Back to Menu"
-            icon={Icon.ArrowLeft}
-            onAction={handleClose}
-          />
+          <Action title="Back to Menu" icon={Icon.ArrowLeft} onAction={handleClose} />
         </ActionPanel>
       }
     >
@@ -265,22 +246,14 @@ export function HotkeysSettingsView({
             icon={hotkey.icon}
             actions={
               <ActionPanel>
-                <Action
-                  title="Edit Hotkey"
-                  icon={Icon.Pencil}
-                  onAction={() => editHotkey(hotkey)}
-                />
+                <Action title="Edit Hotkey" icon={Icon.Pencil} onAction={() => editHotkey(hotkey)} />
                 <Action
                   title="Delete Hotkey"
                   icon={Icon.Trash}
                   style={Action.Style.Destructive}
                   onAction={() => deleteHotkey(hotkey)}
                 />
-                <Action
-                  title="Add New Hotkey"
-                  icon={Icon.Plus}
-                  onAction={addHotkey}
-                />
+                <Action title="Add New Hotkey" icon={Icon.Plus} onAction={addHotkey} />
                 <Action
                   title="Reset to Defaults"
                   icon={Icon.ArrowClockwise}

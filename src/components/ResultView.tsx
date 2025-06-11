@@ -1,18 +1,16 @@
-import {
-  ActionPanel,
-  Action,
-  Detail,
-  Icon,
-  useNavigation,
-} from "@raycast/api";
+import { ActionPanel, Action, Detail, Icon, useNavigation } from "@raycast/api";
 import { useCallback } from "react";
 import { HotKey, EnhancedClipboardData } from "../types";
-import { ChatView, createMessageContent } from "../clipai";
+import { ChatView, createMessageContent } from "../clipyai";
 
-export function ResultView({ result, clipboardData, hotkey }: { 
-  result: string; 
-  clipboardData: EnhancedClipboardData; 
-  hotkey: HotKey 
+export function ResultView({
+  result,
+  clipboardData,
+  hotkey,
+}: {
+  result: string;
+  clipboardData: EnhancedClipboardData;
+  hotkey: HotKey;
 }) {
   const { push, pop } = useNavigation();
 
@@ -33,22 +31,11 @@ ${result}`}
       actions={
         <ActionPanel>
           <ActionPanel.Section title="Result Actions">
-            <Action.CopyToClipboard
-              title="Copy Result"
-              content={result}
-            />
-            <Action
-              title="Expand to Chat"
-              icon={Icon.Message}
-              onAction={expandToChat}
-            />
+            <Action.CopyToClipboard title="Copy Result" content={result} />
+            <Action title="Expand to Chat" icon={Icon.Message} onAction={expandToChat} />
           </ActionPanel.Section>
           <ActionPanel.Section title="Navigation">
-            <Action
-              title="Back"
-              icon={Icon.ArrowLeft}
-              onAction={pop}
-            />
+            <Action title="Back" icon={Icon.ArrowLeft} onAction={pop} />
           </ActionPanel.Section>
         </ActionPanel>
       }
@@ -56,15 +43,12 @@ ${result}`}
         <Detail.Metadata>
           <Detail.Metadata.Label title="Action" text={hotkey.title} />
           <Detail.Metadata.Label title="Characters" text={result.length.toString()} />
-          <Detail.Metadata.Label title="Words" text={result.split(' ').length.toString()} />
+          <Detail.Metadata.Label title="Words" text={result.split(" ").length.toString()} />
           {clipboardData.images && clipboardData.images.length > 0 && (
-            <Detail.Metadata.Label 
-              title="Images" 
-              text={clipboardData.images.length.toString()} 
-            />
+            <Detail.Metadata.Label title="Images" text={clipboardData.images.length.toString()} />
           )}
         </Detail.Metadata>
       }
     />
   );
-} 
+}

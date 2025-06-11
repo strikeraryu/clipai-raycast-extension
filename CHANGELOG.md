@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2024-03-XX
 
 ### Added
+
 - History feature for quick actions
   - View last 20 actions (configurable limit)
   - Reuse previous results
@@ -18,12 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LocalStorage for better data persistence
 
 ### Changed
+
 - Moved to Raycast's LocalStorage API for data persistence
 - Improved component organization
 - Enhanced error handling for invalid data
 - Removed deprecated hotkeys JSON preference
 
 ### Fixed
+
 - Fixed circular dependencies in components
 - Fixed history loading issues
 - Improved error handling for invalid history items
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - Initial Release
 
 ### Features
+
 - AI-powered clipboard enhancement
 - Support for text and image processing
 - Quick actions with customizable hotkeys
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Real-time clipboard monitoring
 
 ### Technical
+
 - Integration with OpenAI Chat Completions API
 - Vision model support (GPT-4 Vision)
 - Clipboard monitoring for text and images

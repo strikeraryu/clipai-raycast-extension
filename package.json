@@ -1,16 +1,16 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "clipyai",
-  "title": "clipyAI",
-  "description": "Clipboard AI",
-  "icon": "extension-icon.png",
+  "title": "ClipyAI",
+  "description": "AI-powered clipboard enhancement for productivity",
+  "icon": "clipyai-icon.png",
   "author": "aryamaan_jain",
   "license": "MIT",
   "commands": [
     {
-      "name": "clipai",
-      "title": "clipai",
-      "description": "",
+      "name": "clipyai",
+      "title": "clipyai",
+      "description": "AI-powered clipboard enhancement for productivity",
       "mode": "view"
     }
   ],

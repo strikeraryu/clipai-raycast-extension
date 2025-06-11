@@ -39,6 +39,7 @@ A powerful Raycast extension that brings AI-powered clipboard enhancement to you
 ### Hotkeys
 
 Customize quick actions with your own:
+
 - Title
 - Prompt
 - Icon
@@ -47,17 +48,20 @@ Customize quick actions with your own:
 ## Usage
 
 1. **Quick Actions**:
+
    - Copy any text or image to clipboard
    - Launch ClipyAI through Raycast
    - Select a quick action
    - Get instant AI-powered results
 
 2. **Chat Mode**:
+
    - Start a conversation with your clipboard content
    - Maintain context through multiple messages
    - Copy responses or entire conversations
 
 3. **Image Processing**:
+
    - Copy images to clipboard
    - ClipyAI automatically switches to vision-enabled models
    - Process images with text context
@@ -80,17 +84,20 @@ Customize quick actions with your own:
 ### Upcoming Features
 
 1. **Advanced AI Features**
+
    - Multiple model support (Claude, Gemini)
    - Custom system prompts per hotkey
    - Function calling support
 
 2. **Enhanced Clipboard**
+
    - Multiple clipboard history
    - Rich text support
    - Code syntax highlighting
    - Table data handling
 
 3. **Workflow Integration**
+
    - Custom workflow creation
    - Action chaining
    - Batch processing
@@ -105,12 +112,14 @@ Customize quick actions with your own:
 ### Future Plans
 
 1. **Development Tools**
+
    - Code review assistance
    - Documentation generation
    - Git commit messages
    - PR descriptions
 
 2. **Content Creation**
+
    - Image generation
    - Text-to-speech
    - Translation services
