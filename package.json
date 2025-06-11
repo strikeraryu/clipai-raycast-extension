@@ -3,7 +3,7 @@
   "name": "clipyai",
   "title": "ClipyAI",
   "description": "AI-powered clipboard enhancement for productivity",
-  "icon": "clipyai-icon.jpeg",
+  "icon": "clipyai-icon.png",
   "author": "aryamaan_jain",
   "license": "MIT",
   "commands": [
