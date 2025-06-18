@@ -1,4 +1,4 @@
-![ClipyAi](./metadata//ClipyAi.png)
+![ClipyAi](./media//ClipyAi.png)
 
 # ClipyAI
 
@@ -83,27 +83,27 @@ Customize quick actions with your own:
 ## Screenshots
 
 ### Quick Actions Menu
-![Quick Action](./metadata/Quick%20Actions%20Menu.png)
+![Quick Action](./media/Quick%20Actions%20Menu.png)
 Shows all the quick actions and provide easy access to them.
 
 ### Quick Action
-![Quick Actions](./metadata/Quick%20Action.png)
+![Quick Actions](./media/Quick%20Action.png)
 Displays action details, character count, word count, and available operations for the current clipboard content.
 
 ### Expand Chat
-![Expand Chat](./metadata/Expand%20Chat.png)
+![Expand Chat](./media/Expand%20Chat.png)
 Expand the quick action to full chat for further queried or updates.
 
 ### Chat Interface
-![Chat Interface](./metadata/Chat.png)
+![Chat Interface](./media/Chat.png)
 Shows the chat interface with message count, character count, and real-time status indicators. 
 
 ### History View
-![History](./metadata/History.png)
+![History](./media/History.png)
 View and manage your action history with detailed timestamps and results.
 
 ### Settings and Configuration
-![Settings](./metadata/Quick%20Actions%20Settings.png)
+![Settings](./media/Quick%20Actions%20Settings.png)
 Customize your quick actions with titles, prompts, and icons.
 
 ## Shortcuts
