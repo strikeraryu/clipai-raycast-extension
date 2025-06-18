@@ -90,10 +90,6 @@ Shows all the quick actions and provide easy access to them.
 ![Quick Actions](./media/Quick%20Action.png)
 Displays action details, character count, word count, and available operations for the current clipboard content.
 
-### Expand Chat
-![Expand Chat](./media/Expand%20Chat.png)
-Expand the quick action to full chat for further queried or updates.
-
 ### Chat Interface
 ![Chat Interface](./media/Chat.png)
 Shows the chat interface with message count, character count, and real-time status indicators. 
